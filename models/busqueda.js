@@ -1,35 +1,51 @@
-const fs=require('fs')
+const fs=require('fs')                                //Guardar archivos en raiz
+const axios = require('axios');                       //peticiones http con promesas
 
-const axios = require('axios');
+const { pausa } = require('../helpers/inquirer');     //Esperar en consola un enter
 
-const { pausa } = require('../helpers/inquirer');
 class Busqueda{
     historial=[];   
     
     constructor(){
-        this.leerDB();
+        this.leerDB(); //Desde el comienzo leo el historial 
     }
 
-    get paramsMapbox(){
-        return {
-            'limit':5,
-            'language':'es',
-            'access_token':'pk.eyJ1IjoiY3Jpc3RpYW5jYXNkIiwiYSI6ImNsMXZmcGwwaDJ1czMzZnRjNmVydWxxaDkifQ.Ogat9Fq1-l8IcML-eSpVUg'                 
+    leerDB(){
+        try{
+            if(!fs.existsSync(this.dbPath)){
+                fs.writeFileSync(this.dbPath,JSON.stringify(`{"historial":[]}`));                
+            }else{           
+                // Leo info el cual es un string
+                const info=fs.readFileSync(this.dbPath,{encoding: 'utf-8'})
+                const data=JSON.parse(info);    //data ya lo conviente en el arreglo                         
+                this.historial=data.historial;  //Retorno el arreglo
+            }
+            return 'Lectura correcta';
+        }catch(error){
+            return error;
         }
     }
 
+    //Petición de coordenadas de la ciudad seleccionada
+    get paramsMapbox(){   
+        return {
+            'limit':5,
+            'language':'es',
+            'access_token':process.env.MAPBOX_KEY               
+        }
+    }
     async ciudad(lugar=''){
         try{            
             const instance=axios.create({
                 baseURL: `https://api.mapbox.com/geocoding/v5/mapbox.places/${lugar}.json`,
-                // todu  lo que viene de spues de un  ? en una petición URL son los parametros
+                // todu  lo que viene despues de un  ? en una petición URL son los parametros
                 params: this.paramsMapbox
             });
-
-            const resp = await instance.get();            
-            //console.log(resp.data.features);
+            
+            const resp = await instance.get();  //Hacer solicitud al backend de mapbox        
+            
             //Retornar un objeto de manera implicita ({})
-            return resp.data.features.map(lugar=>({
+            return resp.data.features.map(lugar=>({  //Retorno los datos de interés
                 id: lugar.id,
                 nombre: lugar.place_name,
                 lng: lugar.center[0],
@@ -41,14 +57,14 @@ class Busqueda{
         }
     }
 
-    get paramsOpenWeather(){
+    //Peticiíon de clima de las coordenadas seleccionadas
+    get paramsOpenWeather(){  
         return {            
             'appid':process.env.OPENWEATHER_KEY,
             'units':'metric',
             'lang':'es'
         }
     }
-
     async clima(lat=0,lon=0){
         
         try{            
@@ -76,65 +92,35 @@ class Busqueda{
             //const {weather,main}=resp.data;
             //return {temp:main.temp, temp_min:main.temp_min, des:weather.description}
 
-                
-          
         }catch(error){
             return[];
         }
     }
-    agregarHistorial(lugar=''){
-        console.log('+++++++++++++++++++++++++++++++++++++++++++++++'.red)
 
-        if(this.historial.includes(lugar.toLocaleLowerCase())){
-            console.log(lugar.toLocaleLowerCase(),'problem'.yellow)           
+
+    agregarHistorial(lugar=''){
+        //Saber si un valor ya está en el arreglo
+        if(this.historial.includes(lugar.toLocaleLowerCase())){ 
+           // console.log(lugar.toLocaleLowerCase(),'Ciudad ya en historual'.yellow)           
         }else{
             this.historial=this.historial.splice(0,5); // borrar las demás posiciones
-            this.historial.unshift(lugar.toLocaleLowerCase());
+            this.historial.unshift(lugar.toLocaleLowerCase()); //Agregar en la primera posición
+           // console.log(lugar.toLocaleLowerCase(),'Ciudad agregada al historial'.red)  
         }
-        //pausa();
-        this.guardarDB();
+       
+        this.guardarDB();  //Guardar el nuevo historia en database.json
         pausa();
     }
 
     dbPath='./db/database.json';
     guardarDB(){
-        console.log('entro a guardar');
+        //console.log('entro a guardar');
         
-        /*if(this.historial.length>5){ 
-            this.historial.splice(5, 1);
-            console.log('----- Borre a'.green, this.historial[4]);           
-        }*/
-        
-
         const payload={
             historial: this.historial
         }
         fs.writeFileSync(this.dbPath,JSON.stringify(payload));
-    }
-
-    leerDB(){
-        try{
-            if(!fs.existsSync(this.dbPath)){
-                fs.writeFileSync(this.dbPath,JSON.stringify(`{"historial":[]}`));
-                
-            }else{
-                //Si existe leo el archio entonces
-            
-                // Leo info el cual es un string
-                const info=fs.readFileSync(this.dbPath,{encoding: 'utf-8'})
-                
-                //data ya lo conviente en el arreglo
-                const data=JSON.parse(info)
-            
-                //Retorno el arreglo
-                //return data;
-                this.historial=data.historial;
-            }
-            return 'Lectura correcta';
-        }catch(error){
-            return error;
-        }
-    }
+    }    
 }
 module.exports=Busqueda;
 

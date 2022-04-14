@@ -67,8 +67,8 @@ const leerInput=async(message)=>{
 
 }
 
-//Listamos todas las tareas, podemos escoger una opción 
-//retornamos los ids de las opciones seleccionadas.
+//Listamos todos los lugares, podemos escoger una opción 
+//retornamos el id de la opción seleccionada
 const listarLugares=async(lugares)=>{
     
     const choices = lugares.map((lugar,i)=>{
@@ -103,57 +103,10 @@ const listarLugares=async(lugares)=>{
     return id;
 }
 
-//Hacemos pregunta boolean para saber si borramos el archivo
-const confirmar = async(message)  => {
-    const question=[
-        {
-            type: 'confirm',
-            name: 'ok',
-            message
-        }
-    ];
-    //El type confirm pregunta(y/n) y es boolean
-    const {ok}=await inquirer.prompt(question);
-    return ok;
-}
-
-//Listo todas las tareas. Opciones multiples, se retorna los IDS
-//de las opciones selccionadas.
-const mostrarListadoCheckList=async(tareas)=>{
-    
-    const choices = tareas.map((tarea,i)=>{
-
-        const idx=(i+1+'.').green;
-
-        //Retorna un arreglo
-        return { 
-            value:tarea.id, //Lo que se enviara al seleccionar la opción
-            name:`${idx} ${tarea.desc}`,  //lo que se ve en el listado
-            checked:(tarea.completadoEn) ?true :false
-                    //usamos ternario como condicional
-        }
-    })
-
-    //Listado del menu a desplegar
-    const preguntas = [
-        {
-            type: 'checkbox',
-            name: 'ids',
-            message:'Seleccione',
-            choices
-        }
-    ]
-    //Esperar a que se escoja una opción
-    //Se retorna el name de la opción escogida, es decir el id
-    const {ids} = await inquirer.prompt(preguntas);
-    return ids;
-}
-
 module.exports={inquirerMenu, 
     pausa, 
     leerInput,
-    listarLugares,
-    mostrarListadoCheckList,
-    confirmar}
+    listarLugares    
+    }
 
     
